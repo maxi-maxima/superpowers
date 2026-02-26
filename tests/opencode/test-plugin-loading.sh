@@ -15,18 +15,23 @@ trap cleanup_test_env EXIT
 
 # Test 1: Verify plugin file exists and is registered
 echo "Test 1: Checking plugin registration..."
-if [ -L "$HOME/.config/opencode/plugins/superpowers.js" ]; then
+plugin_registration="$HOME/.config/opencode/plugins/superpowers.js"
+if [ -L "$plugin_registration" ]; then
     echo "  [PASS] Plugin symlink exists"
+elif [ -f "$plugin_registration" ]; then
+    echo "  [PASS] Plugin registration file exists (copy fallback)"
 else
-    echo "  [FAIL] Plugin symlink not found at $HOME/.config/opencode/plugins/superpowers.js"
+    echo "  [FAIL] Plugin registration file not found at $plugin_registration"
     exit 1
 fi
 
-# Verify symlink target exists
-if [ -f "$(readlink -f "$HOME/.config/opencode/plugins/superpowers.js")" ]; then
+# Verify symlink target exists when registration is a symlink
+if [ -L "$plugin_registration" ] && [ -f "$(readlink -f "$plugin_registration")" ]; then
     echo "  [PASS] Plugin symlink target exists"
+elif [ -f "$plugin_registration" ]; then
+    echo "  [PASS] Plugin registration file is readable"
 else
-    echo "  [FAIL] Plugin symlink target does not exist"
+    echo "  [FAIL] Plugin registration target does not exist"
     exit 1
 fi
 
@@ -61,7 +66,8 @@ fi
 # Test 5: Verify plugin JavaScript syntax (basic check)
 echo "Test 5: Checking plugin JavaScript syntax..."
 plugin_file="$HOME/.config/opencode/superpowers/.opencode/plugins/superpowers.js"
-if node --check "$plugin_file" 2>/dev/null; then
+plugin_file_for_node="$(to_node_path "$plugin_file")"
+if node --check "$plugin_file_for_node" 2>/dev/null; then
     echo "  [PASS] Plugin JavaScript syntax is valid"
 else
     echo "  [FAIL] Plugin has JavaScript syntax errors"

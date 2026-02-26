@@ -12,6 +12,18 @@ export HOME="$TEST_HOME"
 export XDG_CONFIG_HOME="$TEST_HOME/.config"
 export OPENCODE_CONFIG_DIR="$TEST_HOME/.config/opencode"
 
+to_node_path() {
+    local p="$1"
+    if command -v cygpath >/dev/null 2>&1; then
+        cygpath -m "$p"
+    else
+        echo "$p"
+    fi
+}
+
+export TEST_HOME_NODE
+TEST_HOME_NODE="$(to_node_path "$TEST_HOME")"
+
 # Install plugin to test location
 mkdir -p "$HOME/.config/opencode/superpowers"
 cp -r "$REPO_ROOT/lib" "$HOME/.config/opencode/superpowers/"
@@ -23,8 +35,14 @@ cp "$REPO_ROOT/.opencode/plugins/superpowers.js" "$HOME/.config/opencode/superpo
 
 # Register plugin via symlink
 mkdir -p "$HOME/.config/opencode/plugins"
-ln -sf "$HOME/.config/opencode/superpowers/.opencode/plugins/superpowers.js" \
-       "$HOME/.config/opencode/plugins/superpowers.js"
+plugin_source="$HOME/.config/opencode/superpowers/.opencode/plugins/superpowers.js"
+plugin_target="$HOME/.config/opencode/plugins/superpowers.js"
+if ln -sf "$plugin_source" "$plugin_target" 2>/dev/null && [ -L "$plugin_target" ]; then
+    :
+else
+    # Some Windows shells create regular files instead of symlinks; copy is enough for tests.
+    cp -f "$plugin_source" "$plugin_target"
+fi
 
 # Create test skills in different locations for testing
 
@@ -70,4 +88,5 @@ cleanup_test_env() {
 
 # Export for use in tests
 export -f cleanup_test_env
+export -f to_node_path
 export REPO_ROOT
